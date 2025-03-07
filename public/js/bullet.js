@@ -66,7 +66,7 @@ function createBullet(svg, x, y, direction, isEnemy = false) {
 
 // Update bullets
 function updateBullets(bullets, enemyBullets, enemyState, player, svg, scoreElement, 
-                     deltaTime, width, height, gameOver, powerUps) {
+                     deltaTime, width, height, gameOver, powerUps, hitboxesVisible = false) {
   const moveAmount = deltaTime / 16;
   let score = parseInt(scoreElement.textContent);
   
@@ -86,6 +86,12 @@ function updateBullets(bullets, enemyBullets, enemyState, player, svg, scoreElem
     const bulletGroup = bullet.element.parentNode;
     if (bulletGroup) {
       bulletGroup.setAttribute('transform', `translate(${bullet.x}, ${bullet.y})`);
+      
+      // Update bullet hitbox visibility
+      const hitbox = bulletGroup.querySelector('.hitbox');
+      if (hitbox) {
+        hitbox.style.opacity = hitboxesVisible ? '1' : '0';
+      }
     }
     
     // Check for collisions with enemies
@@ -125,6 +131,12 @@ function updateBullets(bullets, enemyBullets, enemyState, player, svg, scoreElem
     const bulletGroup = bullet.element.parentNode;
     if (bulletGroup) {
       bulletGroup.setAttribute('transform', `translate(${bullet.x}, ${bullet.y})`);
+      
+      // Update bullet hitbox visibility
+      const hitbox = bulletGroup.querySelector('.hitbox');
+      if (hitbox) {
+        hitbox.style.opacity = hitboxesVisible ? '1' : '0';
+      }
     }
     
     // Check for collisions with player
@@ -144,7 +156,7 @@ function updateBullets(bullets, enemyBullets, enemyState, player, svg, scoreElem
     const powerUp = powerUps[i];
     
     // Update power-up position - pass player to make them move toward player
-    powerUp.update(deltaTime, player);
+    powerUp.update(deltaTime, player, hitboxesVisible);
     
     // Remove inactive power-ups
     if (!powerUp.active) {

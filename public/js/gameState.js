@@ -4,84 +4,98 @@ import { initEnemies } from './enemy.js';
 import { createSpaceBackground } from './background.js';
 import { ENEMY_SHOOT_COOLDOWN } from './constants.js';
 
-// Game state variables
-let gameRunning = false;
-let score = 0;
-let lives = 3;
-let width, height, scale;
-let player;
-let enemyState = null;
-let bullets = [];
-let enemyBullets = [];
-let bombs = [];
-let powerUps = [];
-let lastEnemyShot = 0;
-let keyStates = {};
-let lastFrameTime = 0;
-let animationFrameId;
-let spaceBackground;
+// Central game state object
+export const gameState = {
+  // Game status
+  gameRunning: false,
+  score: 0,
+  lives: 3,
+  hitboxesVisible: false,
+  
+  // Dimensions & scaling
+  width: 0,
+  height: 0,
+  scale: 0,
+  
+  // Entities
+  player: null,
+  enemyState: null,
+  bullets: [],
+  enemyBullets: [],
+  bombs: [],
+  powerUps: [],
+  spaceBackground: null,
+  
+  // Timing
+  lastEnemyShot: 0,
+  lastFrameTime: 0,
+  animationFrameId: null,
+  
+  // Input
+  keyStates: {}
+};
 
 // Game over
 function gameOver(gameOverScreen, finalScoreElement) {
-  gameRunning = false;
-  cancelAnimationFrame(animationFrameId);
-  finalScoreElement.textContent = score;
+  gameState.gameRunning = false;
+  cancelAnimationFrame(gameState.animationFrameId);
+  finalScoreElement.textContent = gameState.score;
   gameOverScreen.style.display = 'block';
 }
 
 // Start the game
 function startGame(svg, scoreElement, startScreen, gameOverScreen) {
   const dimensions = setDimensions(svg);
-  width = dimensions.width;
-  height = dimensions.height;
-  scale = dimensions.scale;
+  gameState.width = dimensions.width;
+  gameState.height = dimensions.height;
+  gameState.scale = dimensions.scale;
 
   svg.innerHTML = '';
-  enemyState = initEnemies();
-  bullets = [];
-  enemyBullets = [];
-  bombs = [];
-  powerUps = [];
-  score = 0;
-  keyStates = {};
+  gameState.enemyState = initEnemies();
+  gameState.bullets = [];
+  gameState.enemyBullets = [];
+  gameState.bombs = [];
+  gameState.powerUps = [];
+  gameState.score = 0;
+  gameState.keyStates = {};
   
-  scoreElement.textContent = score;
+  scoreElement.textContent = gameState.score;
   startScreen.style.display = 'none';
   gameOverScreen.style.display = 'none';
   
   // Create dynamic space background
-  spaceBackground = createSpaceBackground(svg, width, height);
+  gameState.spaceBackground = createSpaceBackground(svg, gameState.width, gameState.height);
   
   // Create player
-  player = createPlayer(svg, width, height, scale);
+  gameState.player = createPlayer(svg, gameState.width, gameState.height, gameState.scale);
   
-  lastFrameTime = performance.now();
-  gameRunning = true;
-  lastEnemyShot = 0;
+  gameState.lastFrameTime = performance.now();
+  gameState.gameRunning = true;
+  gameState.lastEnemyShot = 0;
+}
+
+// Toggle hitbox visibility
+function toggleHitboxes() {
+  gameState.hitboxesVisible = !gameState.hitboxesVisible;
+  updateHitboxVisibility();
+}
+
+// Update hitbox visibility for all entities
+function updateHitboxVisibility() {
+  // Get all hitbox elements
+  const hitboxes = document.querySelectorAll('.hitbox');
   
-  return {
-    gameRunning,
-    player,
-    enemyState,
-    bullets,
-    enemyBullets,
-    bombs,
-    powerUps,
-    lastEnemyShot,
-    keyStates,
-    lastFrameTime,
-    width,
-    height,
-    scale,
-    spaceBackground
-  };
+  // Set opacity based on visibility state
+  hitboxes.forEach(hitbox => {
+    hitbox.style.opacity = gameState.hitboxesVisible ? '1' : '0';
+  });
 }
 
 // Handle resize
-function handleResize(svg, animationFrameId, gameRunning, startGame) {
-  if (gameRunning) {
-    cancelAnimationFrame(animationFrameId);
-    return startGame();
+function handleResize(svg) {
+  if (gameState.gameRunning) {
+    cancelAnimationFrame(gameState.animationFrameId);
+    return null; // Signal that a restart is needed
   } else {
     return setDimensions(svg);
   }
@@ -91,18 +105,6 @@ export {
   gameOver,
   startGame,
   handleResize,
-  gameRunning,
-  score,
-  lives,
-  player,
-  enemyState,
-  bullets,
-  enemyBullets,
-  bombs,
-  powerUps,
-  lastEnemyShot,
-  keyStates,
-  lastFrameTime,
-  animationFrameId,
-  spaceBackground
+  toggleHitboxes,
+  updateHitboxVisibility
 };

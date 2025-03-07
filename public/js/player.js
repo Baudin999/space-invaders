@@ -69,7 +69,7 @@ function createPlayer(svg, width, height, scale) {
 }
 
 // Update player
-function updatePlayer(player, keyStates, width, height, deltaTime, svg, bullets, bombs = [], enemyState = null) {
+function updatePlayer(player, keyStates, width, height, deltaTime, svg, bullets, bombs = [], enemyState = null, hitboxesVisible = false) {
   const moveAmount = player.speed * deltaTime / 16;
   
   // Horizontal movement - allow player to move across most of the screen
@@ -92,6 +92,12 @@ function updatePlayer(player, keyStates, width, height, deltaTime, svg, bullets,
   const playerGroup = document.getElementById('player-group');
   if (playerGroup) {
     playerGroup.setAttribute('transform', `translate(${player.x}, ${player.y})`);
+    
+    // Update player hitbox visibility
+    const hitbox = playerGroup.querySelector('.hitbox');
+    if (hitbox) {
+      hitbox.style.opacity = hitboxesVisible ? '1' : '0';
+    }
   }
   
   // Check if power-up has expired

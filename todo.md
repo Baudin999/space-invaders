@@ -1,2 +1,3 @@
-We currently have space invaders, but what I want is a side scroller where we encounter different enemy types which fly at different speeds and different armor. 
-We can also encounter powerups which cause our weapons to upgrade so that they do more dmg. 
+I do not like the way the state is manages. Currently the rendering and the state are not managed correctly. There should be an update loop where we update all the entities. But we should also pass in the state. If, for example the hitboxes should be visible, I want every element which has a hitbox to show the hitbox, not just the ones which were already rendered. 
+
+So, I want you to refactor the application, pull out the state and the entities, do an update for entities and pass the state.

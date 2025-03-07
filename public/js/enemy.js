@@ -124,7 +124,7 @@ function spawnEnemies(enemyState, width, height, scale, svg, currentTime) {
 
 // Update enemies
 function updateEnemies(enemyState, player, width, height, scale, deltaTime, svg, 
-                     enemyBullets, gameOver, currentTime, powerUps) {
+                     enemyBullets, gameOver, currentTime, powerUps, hitboxesVisible = false) {
   // Spawn new enemies
   enemyState = spawnEnemies(enemyState, width, height, scale, svg, currentTime);
   
@@ -163,6 +163,12 @@ function updateEnemies(enemyState, player, width, height, scale, deltaTime, svg,
     const enemyGroup = enemy.element.parentNode;
     if (enemyGroup) {
       enemyGroup.setAttribute('transform', `translate(${enemy.x}, ${enemy.y})`);
+      
+      // Update enemy hitbox visibility
+      const hitbox = enemyGroup.querySelector('.hitbox');
+      if (hitbox) {
+        hitbox.style.opacity = hitboxesVisible ? '1' : '0';
+      }
     }
     
     // Remove enemies that move off-screen to the left

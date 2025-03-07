@@ -46,7 +46,7 @@ function createBomb(svg, x, y, targetEnemy, scale) {
 }
 
 // Update bomb
-function updateBomb(bomb, deltaTime, svg, enemyState) {
+function updateBomb(bomb, deltaTime, svg, enemyState, hitboxesVisible = false) {
   // Find the current position of the target enemy
   const targetEnemy = enemyState.enemies.find(enemy => enemy === bomb.target);
   
