@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Space Invaders game using SVG",
   "main": "server.js",
+  "homepage": "https://baudin999.github.io/space-invaders",
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",

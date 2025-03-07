@@ -2,6 +2,10 @@
 
 A full-screen Space Invaders game created with JavaScript and SVG graphics.
 
+## Play Now
+
+Play the game online at: https://baudin999.github.io/space-invaders
+
 ## Features
 - Full-screen gameplay
 - SVG graphics for crisp visuals at any resolution
@@ -27,7 +31,12 @@ npm start
 
 Then open your browser and navigate to `http://localhost:3000`
 
+## Deployment
+
+The game is automatically deployed to GitHub Pages when changes are pushed to the main branch.
+
 ## Technologies Used
 - Express.js for the server
 - SVG for vector graphics
 - Vanilla JavaScript for game logic
+- GitHub Actions for CI/CD
