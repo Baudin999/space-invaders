@@ -71,16 +71,26 @@ function updateBomb(bomb, deltaTime, svg, enemyState, hitboxesVisible = false) {
     bomb.targetX = targetEnemy.x + targetEnemy.width / 2;
     bomb.targetY = targetEnemy.y + targetEnemy.height / 2;
     
-    // Check if bomb has reached the enemy (collision detection)
-    const bombRadius = bomb.size;
+    // **IMPROVED COLLISION DETECTION**
+    // Check if bomb is close to the enemy with a larger collision radius
+    // This makes bombs explode as soon as they get close to the enemy
+    const bombRadius = bomb.size * 2; // Increased collision radius
     const distance = Math.sqrt(
       Math.pow(bomb.x - bomb.targetX, 2) + 
       Math.pow(bomb.y - bomb.targetY, 2)
     );
     
-    if (distance < bombRadius + targetEnemy.width / 2) {
-      // Bomb hit the target - create explosion
-      createExplosion(svg, bomb.x, bomb.y, bomb.size * 3);
+    // Check both distance-based collision and rect-based collision
+    const rectCollision = (
+      bomb.x - bomb.size < targetEnemy.x + targetEnemy.width &&
+      bomb.x + bomb.size > targetEnemy.x &&
+      bomb.y - bomb.size < targetEnemy.y + targetEnemy.height &&
+      bomb.y + bomb.size > targetEnemy.y
+    );
+    
+    if (distance < bombRadius + targetEnemy.width / 2 || rectCollision) {
+      // Bomb hit the target - create explosion at enemy's position for better visual feedback
+      createExplosion(svg, targetEnemy.x + targetEnemy.width / 2, targetEnemy.y + targetEnemy.height / 2, bomb.size * 3);
       
       // Remove bomb
       if (bomb.element.parentNode) {

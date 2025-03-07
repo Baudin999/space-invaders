@@ -9,7 +9,8 @@ import {
   startGame as startGameFunc,
   handleResize as handleResizeFunc,
   toggleHitboxes as toggleHitboxesFunc,
-  updateHitboxVisibility
+  updateHitboxVisibility,
+  updateDifficulty
 } from './gameState.js';
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -120,12 +121,17 @@ document.addEventListener('DOMContentLoaded', () => {
     gameState.enemyBullets = bulletResult.enemyBullets;
     gameState.enemyState = bulletResult.enemyState;
     gameState.powerUps = bulletResult.powerUps;
+    // Store previous score for difficulty check
+    const previousScore = gameState.score;
     gameState.score = bulletResult.score;
     
     // Update hitbox visibility if needed
     if (gameState.hitboxesVisible) {
       updateHitboxVisibility();
     }
+    
+    // Check if difficulty should increase based on score
+    updateDifficulty(gameState.score, previousScore);
   }
 
   // Start the game

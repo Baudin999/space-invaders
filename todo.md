@@ -1,3 +1,5 @@
-I do not like the way the state is manages. Currently the rendering and the state are not managed correctly. There should be an update loop where we update all the entities. But we should also pass in the state. If, for example the hitboxes should be visible, I want every element which has a hitbox to show the hitbox, not just the ones which were already rendered. 
+Bombs are not good. It flies in an arc, but when it collides with the enemy it does not explode immediately. Please make this better. 
 
-So, I want you to refactor the application, pull out the state and the entities, do an update for entities and pass the state.
+Second feature, make the enemy bullets easier to see.
+
+Third feature, Every 100 points, make the game harder, give enemies 1 more armor and generate 5% more enemies

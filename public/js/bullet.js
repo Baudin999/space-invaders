@@ -9,8 +9,9 @@ function createBullet(svg, x, y, direction, isEnemy = false) {
   const width = parseFloat(viewBox[2]);
   const scale = Math.min(width, window.innerHeight) / 800;
   
-  const bulletWidth = isEnemy ? 2 * scale : 4 * scale;
-  const bulletHeight = isEnemy ? 2 * scale : 4 * scale;
+  // Make enemy bullets larger and more visible
+  const bulletWidth = isEnemy ? 6 * scale : 4 * scale;
+  const bulletHeight = isEnemy ? 10 * scale : 4 * scale;
   
   // Create bullet group
   const bulletGroup = createSVGElement('g', {
@@ -18,15 +19,76 @@ function createBullet(svg, x, y, direction, isEnemy = false) {
   });
   
   // Create bullet visual
-  const bulletElement = createSVGElement('rect', {
-    x: 0,
-    y: 0,
-    width: bulletWidth,
-    height: bulletHeight,
-    fill: isEnemy ? 'red' : 'white',
-    rx: bulletWidth / 2,
-    ry: bulletWidth / 2
-  });
+  let bulletElement;
+  
+  if (isEnemy) {
+    // Enhanced enemy bullet with glow effect and better shape
+    bulletElement = createSVGElement('polygon', {
+      points: `${bulletWidth/2},0 ${bulletWidth},${bulletHeight/3} ${bulletWidth},${bulletHeight} 0,${bulletHeight} 0,${bulletHeight/3}`,
+      fill: '#FF3300', // Brighter red
+      stroke: '#FFFF00', // Yellow outline
+      'stroke-width': 1
+    });
+    
+    // Add a glow filter
+    const filterId = `enemy-bullet-glow-${Math.random().toString(36).substr(2, 9)}`;
+    
+    const filter = createSVGElement('filter', {
+      id: filterId,
+      width: '300%',
+      height: '300%',
+      x: '-100%',
+      y: '-100%'
+    });
+    
+    const feGaussianBlur = createSVGElement('feGaussianBlur', {
+      'stdDeviation': '2',
+      'result': 'blur'
+    });
+    
+    const feColorMatrix = createSVGElement('feColorMatrix', {
+      'in': 'blur',
+      'type': 'matrix',
+      'values': '1 0 0 0 1  0 0 0 0 0.5  0 0 0 0 0  0 0 0 1 0',
+      'result': 'glow'
+    });
+    
+    const feMerge = createSVGElement('feMerge', {});
+    const feMergeNode1 = createSVGElement('feMergeNode', {
+      'in': 'glow'
+    });
+    const feMergeNode2 = createSVGElement('feMergeNode', {
+      'in': 'SourceGraphic'
+    });
+    
+    feMerge.appendChild(feMergeNode1);
+    feMerge.appendChild(feMergeNode2);
+    filter.appendChild(feGaussianBlur);
+    filter.appendChild(feColorMatrix);
+    filter.appendChild(feMerge);
+    
+    // Add the filter to the SVG's defs
+    let defs = svg.querySelector('defs');
+    if (!defs) {
+      defs = createSVGElement('defs', {});
+      svg.appendChild(defs);
+    }
+    defs.appendChild(filter);
+    
+    // Apply filter to bullet
+    bulletElement.setAttribute('filter', `url(#${filterId})`);
+  } else {
+    // Standard player bullet
+    bulletElement = createSVGElement('rect', {
+      x: 0,
+      y: 0,
+      width: bulletWidth,
+      height: bulletHeight,
+      fill: 'white',
+      rx: bulletWidth / 2,
+      ry: bulletWidth / 2
+    });
+  }
   
   // Create hitbox outline
   const hitboxOutline = createSVGElement('rect', {
@@ -106,10 +168,19 @@ function updateBullets(bullets, enemyBullets, enemyState, player, svg, scoreElem
         // Handle enemy hit (reduce armor or destroy)
         const result = enemyHit(enemy, enemyState.enemies, svg, score, powerUps);
         enemyState.enemies = result.enemies;
+        
+        // Store previous score for difficulty check
+        const previousScore = score;
         score = result.score;
         powerUps = result.powerUps;
         
+        // Update score display
         scoreElement.textContent = score;
+        
+        // Check if difficulty should increase
+        if (typeof updateDifficulty === 'function') {
+          updateDifficulty(score, previousScore);
+        }
         break;
       }
     }

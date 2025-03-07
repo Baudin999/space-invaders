@@ -26,6 +26,13 @@ const ENEMY_TYPES = {
     points: 30,
     color: '#5555FF',
     size: 40
+  },
+  ARC: {
+    speed: 2.5,
+    armor: 2,
+    points: 25,
+    color: '#FFAA00',
+    size: 35
   }
 };
 
