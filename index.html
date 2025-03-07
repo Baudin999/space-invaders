@@ -3,21 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Space Invaders</title>
+  <title>Space Shooter</title>
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
   <div id="game-container">
     <svg id="game-svg" preserveAspectRatio="xMidYMid meet"></svg>
     <div class="score-display">Score: <span id="score">0</span></div>
+    <div class="power-up-indicator" id="power-up-indicator"></div>
     <div class="game-over" id="game-over">
       <h1>GAME OVER</h1>
       <div>Your Score: <span id="final-score">0</span></div>
       <button class="button" id="restart-button">Play Again</button>
     </div>
     <div class="start-screen" id="start-screen">
-      <h1>SPACE INVADERS</h1>
-      <p>Use LEFT and RIGHT arrows to move<br>SPACE to shoot</p>
+      <h1>SPACE SHOOTER</h1>
+      <p>Use ARROWS to move<br>SPACE to shoot</p>
+      <p>Collect power-ups to upgrade your weapons!</p>
       <button class="button" id="start-button">Start Game</button>
     </div>
   </div>
