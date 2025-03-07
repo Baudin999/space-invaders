@@ -2,6 +2,7 @@ import { updatePlayer } from './player.js';
 import { updateEnemies } from './enemy.js';
 import { updateBullets } from './bullet.js';
 import { updateSpaceBackground } from './background.js';
+import { updateBomb } from './bomb.js';
 import { 
   gameOver as gameOverFunc, 
   startGame as startGameFunc,
@@ -24,6 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let enemyState = null;
   let bullets = [];
   let enemyBullets = [];
+  let bombs = [];
   let powerUps = [];
   let lastEnemyShot = 0;
   let keyStates = {};
@@ -31,6 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let animationFrameId;
   let width, height, scale;
   let spaceBackground;
+  let hitboxesVisible = false;
 
   // Game over
   function gameOver() {
@@ -50,7 +53,9 @@ document.addEventListener('DOMContentLoaded', () => {
     updateSpaceBackground(spaceBackground, deltaTime, width);
     
     // Update player - now with height parameter for vertical movement
-    bullets = updatePlayer(player, keyStates, width, height, deltaTime, svg, bullets);
+    const playerResult = updatePlayer(player, keyStates, width, height, deltaTime, svg, bullets, bombs, enemyState);
+    bullets = playerResult.bullets;
+    bombs = playerResult.bombs;
     
     // Update enemies - now with side-scrolling behavior
     const enemyResult = updateEnemies(
@@ -62,6 +67,16 @@ document.addEventListener('DOMContentLoaded', () => {
     enemyState = enemyResult.enemyState;
     enemyBullets = enemyResult.enemyBullets;
     powerUps = enemyResult.powerUps;
+    
+    // Update bombs
+    for (let i = bombs.length - 1; i >= 0; i--) {
+      const bombResult = updateBomb(bombs[i], deltaTime, svg, enemyState);
+      
+      if (bombResult.completed) {
+        bombs.splice(i, 1);
+        enemyState = bombResult.enemyState;
+      }
+    }
     
     // Update bullets and powerups
     const bulletResult = updateBullets(
@@ -88,6 +103,7 @@ document.addEventListener('DOMContentLoaded', () => {
     enemyState = gameState.enemyState;
     bullets = gameState.bullets;
     enemyBullets = gameState.enemyBullets;
+    bombs = gameState.bombs;
     powerUps = gameState.powerUps;
     lastEnemyShot = gameState.lastEnemyShot;
     keyStates = gameState.keyStates;
@@ -100,12 +116,30 @@ document.addEventListener('DOMContentLoaded', () => {
     animationFrameId = requestAnimationFrame(gameLoop);
   }
 
+  // Toggle hitbox visibility
+  function toggleHitboxes() {
+    hitboxesVisible = !hitboxesVisible;
+    
+    // Get all hitbox elements
+    const hitboxes = document.querySelectorAll('.hitbox');
+    
+    // Set opacity based on visibility state
+    hitboxes.forEach(hitbox => {
+      hitbox.style.opacity = hitboxesVisible ? '1' : '0';
+    });
+  }
+  
   // Handle keyboard input
   function handleKeyDown(e) {
     keyStates[e.key] = true;
     // Prevent scrolling with arrow keys or space
     if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) {
       e.preventDefault();
+    }
+    
+    // Toggle hitbox display with 'h' key
+    if (e.key === 'h' && gameRunning) {
+      toggleHitboxes();
     }
   }
 

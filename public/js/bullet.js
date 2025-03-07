@@ -9,12 +9,18 @@ function createBullet(svg, x, y, direction, isEnemy = false) {
   const width = parseFloat(viewBox[2]);
   const scale = Math.min(width, window.innerHeight) / 800;
   
-  const bulletWidth = isEnemy ? 4 * scale : 8 * scale;
-  const bulletHeight = isEnemy ? 4 * scale : 8 * scale;
+  const bulletWidth = isEnemy ? 2 * scale : 4 * scale;
+  const bulletHeight = isEnemy ? 2 * scale : 4 * scale;
   
+  // Create bullet group
+  const bulletGroup = createSVGElement('g', {
+    class: 'bullet-group'
+  });
+  
+  // Create bullet visual
   const bulletElement = createSVGElement('rect', {
-    x,
-    y,
+    x: 0,
+    y: 0,
     width: bulletWidth,
     height: bulletHeight,
     fill: isEnemy ? 'red' : 'white',
@@ -22,7 +28,29 @@ function createBullet(svg, x, y, direction, isEnemy = false) {
     ry: bulletWidth / 2
   });
   
-  svg.appendChild(bulletElement);
+  // Create hitbox outline
+  const hitboxOutline = createSVGElement('rect', {
+    x: 0,
+    y: 0,
+    width: bulletWidth,
+    height: bulletHeight,
+    fill: 'none',
+    stroke: isEnemy ? 'red' : 'white',
+    'stroke-width': 1,
+    'stroke-dasharray': '2,2',
+    class: 'hitbox',
+    'pointer-events': 'none',
+    opacity: 0 // Hidden by default
+  });
+  
+  // Add elements to group - add visual first so hitbox appears on top
+  bulletGroup.appendChild(bulletElement);
+  bulletGroup.appendChild(hitboxOutline);
+  
+  // Position the group
+  bulletGroup.setAttribute('transform', `translate(${x}, ${y})`);
+  
+  svg.appendChild(bulletGroup);
   
   return {
     element: bulletElement,
@@ -54,8 +82,11 @@ function updateBullets(bullets, enemyBullets, enemyState, player, svg, scoreElem
       continue;
     }
     
-    // Update bullet element position
-    bullet.element.setAttribute('x', bullet.x);
+    // Update bullet group position
+    const bulletGroup = bullet.element.parentNode;
+    if (bulletGroup) {
+      bulletGroup.setAttribute('transform', `translate(${bullet.x}, ${bullet.y})`);
+    }
     
     // Check for collisions with enemies
     for (let j = enemyState.enemies.length - 1; j >= 0; j--) {
@@ -90,8 +121,11 @@ function updateBullets(bullets, enemyBullets, enemyState, player, svg, scoreElem
       continue;
     }
     
-    // Update bullet element position
-    bullet.element.setAttribute('x', bullet.x);
+    // Update bullet group position
+    const bulletGroup = bullet.element.parentNode;
+    if (bulletGroup) {
+      bulletGroup.setAttribute('transform', `translate(${bullet.x}, ${bullet.y})`);
+    }
     
     // Check for collisions with player
     if (checkCollision(bullet, player)) {
@@ -109,8 +143,8 @@ function updateBullets(bullets, enemyBullets, enemyState, player, svg, scoreElem
   for (let i = powerUps.length - 1; i >= 0; i--) {
     const powerUp = powerUps[i];
     
-    // Update power-up position
-    powerUp.update(deltaTime);
+    // Update power-up position - pass player to make them move toward player
+    powerUp.update(deltaTime, player);
     
     // Remove inactive power-ups
     if (!powerUp.active) {

@@ -35,15 +35,34 @@ class PowerUp {
     this.svg.appendChild(this.element);
   }
 
-  update(deltaTime) {
-    // Move the power-up downward slowly
-    this.y += this.speed;
+  update(deltaTime, player) {
+    // Get player position
+    if (player) {
+      // Calculate direction vector towards player
+      const dx = player.x + player.width/2 - (this.x + this.width/2);
+      const dy = player.y + player.height/2 - (this.y + this.height/2);
+      
+      // Normalize the vector
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      
+      if (distance > 0) {
+        // Move the power-up toward the player, faster if closer
+        const moveSpeed = Math.min(this.speed * (1 + (300 / distance)), 5);
+        this.x += (dx / distance) * moveSpeed;
+        this.y += (dy / distance) * moveSpeed;
+      }
+    } else {
+      // Default movement if player not provided
+      this.x -= this.speed;
+    }
     
     // Update the element position
+    this.element.setAttribute('x', this.x);
     this.element.setAttribute('y', this.y);
     
     // Check if power-up is out of bounds
-    if (this.y > window.innerHeight) {
+    if (this.y > window.innerHeight || this.y < 0 || 
+        this.x > window.innerWidth || this.x < 0) {
       this.destroy();
     }
   }

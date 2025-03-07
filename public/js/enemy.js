@@ -1,5 +1,5 @@
 import { createSVGElement } from './utils.js';
-import { ENEMY_TYPES, ENEMY_SPAWN_INTERVAL, POWERUP_SPAWN_CHANCE, ENEMY_SHOOT_COOLDOWN } from './constants.js';
+import { ENEMY_TYPES, ENEMY_SPAWN_INTERVAL, POWERUP_SPAWN_CHANCE, ENEMY_SHOOT_COOLDOWN, POWERUP_TYPES } from './constants.js';
 import { createBullet } from './bullet.js';
 import PowerUp from './powerup.js';
 
@@ -7,6 +7,12 @@ import PowerUp from './powerup.js';
 function createEnemy(svg, x, y, type, scale) {
   const enemyInfo = ENEMY_TYPES[type];
   const enemySize = enemyInfo.size * scale;
+  
+  // Create enemy group
+  const enemyGroup = createSVGElement('g', {
+    class: 'enemy-group',
+    transform: `translate(${x}, ${y})`
+  });
   
   // Create different shapes for different enemy types
   let element;
@@ -18,8 +24,7 @@ function createEnemy(svg, x, y, type, scale) {
         points: `${enemySize/2},0 ${enemySize},${enemySize} 0,${enemySize}`,
         fill: enemyInfo.color,
         stroke: 'white',
-        'stroke-width': 2,
-        transform: `translate(${x}, ${y})`
+        'stroke-width': 2
       });
       break;
     case 'FAST':
@@ -28,8 +33,7 @@ function createEnemy(svg, x, y, type, scale) {
         points: `${enemySize/2},0 ${enemySize},${enemySize/2} ${enemySize/2},${enemySize} 0,${enemySize/2}`,
         fill: enemyInfo.color,
         stroke: 'white',
-        'stroke-width': 2,
-        transform: `translate(${x}, ${y})`
+        'stroke-width': 2
       });
       break;
     case 'TANK':
@@ -38,13 +42,31 @@ function createEnemy(svg, x, y, type, scale) {
         points: `${enemySize/4},0 ${enemySize*3/4},0 ${enemySize},${enemySize/2} ${enemySize*3/4},${enemySize} ${enemySize/4},${enemySize} 0,${enemySize/2}`,
         fill: enemyInfo.color,
         stroke: 'white',
-        'stroke-width': 2,
-        transform: `translate(${x}, ${y})`
+        'stroke-width': 2
       });
       break;
   }
   
-  svg.appendChild(element);
+  // Create hitbox outline
+  const hitboxOutline = createSVGElement('rect', {
+    x: 0,
+    y: 0,
+    width: enemySize,
+    height: enemySize,
+    fill: 'none',
+    stroke: enemyInfo.color,
+    'stroke-width': 2,
+    'stroke-dasharray': '3,3',
+    class: 'hitbox',
+    'pointer-events': 'none',
+    opacity: 0 // Hidden by default
+  });
+  
+  // Add elements to group - add visual first so hitbox appears on top
+  enemyGroup.appendChild(element);
+  enemyGroup.appendChild(hitboxOutline);
+  
+  svg.appendChild(enemyGroup);
   
   return {
     element,
@@ -137,8 +159,11 @@ function updateEnemies(enemyState, player, width, height, scale, deltaTime, svg,
         break;
     }
     
-    // Update enemy element position
-    enemy.element.setAttribute('transform', `translate(${enemy.x}, ${enemy.y})`);
+    // Update enemy group position
+    const enemyGroup = enemy.element.parentNode;
+    if (enemyGroup) {
+      enemyGroup.setAttribute('transform', `translate(${enemy.x}, ${enemy.y})`);
+    }
     
     // Remove enemies that move off-screen to the left
     if (enemy.x + enemy.width < 0) {
@@ -190,8 +215,10 @@ function enemyHit(enemy, enemies, svg, score, powerUps) {
     if (index > -1) {
       enemies.splice(index, 1);
     }
-    if (enemy.element && enemy.element.parentNode) {
-      enemy.element.parentNode.removeChild(enemy.element);
+    // Find the enemy group (parent of the element) and remove it
+    const enemyGroup = enemy.element.parentNode;
+    if (enemyGroup && enemyGroup.parentNode) {
+      enemyGroup.parentNode.removeChild(enemyGroup);
     }
     
     // Increment score

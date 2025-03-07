@@ -13,6 +13,7 @@ let player;
 let enemyState = null;
 let bullets = [];
 let enemyBullets = [];
+let bombs = [];
 let powerUps = [];
 let lastEnemyShot = 0;
 let keyStates = {};
@@ -39,6 +40,7 @@ function startGame(svg, scoreElement, startScreen, gameOverScreen) {
   enemyState = initEnemies();
   bullets = [];
   enemyBullets = [];
+  bombs = [];
   powerUps = [];
   score = 0;
   keyStates = {};
@@ -63,6 +65,7 @@ function startGame(svg, scoreElement, startScreen, gameOverScreen) {
     enemyState,
     bullets,
     enemyBullets,
+    bombs,
     powerUps,
     lastEnemyShot,
     keyStates,
@@ -95,6 +98,7 @@ export {
   enemyState,
   bullets,
   enemyBullets,
+  bombs,
   powerUps,
   lastEnemyShot,
   keyStates,
