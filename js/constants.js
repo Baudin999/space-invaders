@@ -2,6 +2,7 @@
 const SCROLL_SPEED = 2;
 const PLAYER_SHOOT_COOLDOWN = 300;
 const ENEMY_SHOOT_COOLDOWN = 1000;
+const BOMB_COOLDOWN = 5000; // 5 seconds between bombs
 
 // Enemy types
 const ENEMY_TYPES = {
@@ -25,6 +26,13 @@ const ENEMY_TYPES = {
     points: 30,
     color: '#5555FF',
     size: 40
+  },
+  ARC: {
+    speed: 2.5,
+    armor: 2,
+    points: 25,
+    color: '#FFAA00',
+    size: 35
   }
 };
 
@@ -57,6 +65,7 @@ export {
   SCROLL_SPEED,
   PLAYER_SHOOT_COOLDOWN,
   ENEMY_SHOOT_COOLDOWN,
+  BOMB_COOLDOWN,
   ENEMY_TYPES,
   POWERUP_TYPES,
   ENEMY_SPAWN_INTERVAL,

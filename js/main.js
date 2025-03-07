@@ -2,10 +2,15 @@ import { updatePlayer } from './player.js';
 import { updateEnemies } from './enemy.js';
 import { updateBullets } from './bullet.js';
 import { updateSpaceBackground } from './background.js';
+import { updateBomb } from './bomb.js';
 import { 
+  gameState,
   gameOver as gameOverFunc, 
   startGame as startGameFunc,
-  handleResize as handleResizeFunc 
+  handleResize as handleResizeFunc,
+  toggleHitboxes as toggleHitboxesFunc,
+  updateHitboxVisibility,
+  updateDifficulty
 } from './gameState.js';
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -18,108 +23,151 @@ document.addEventListener('DOMContentLoaded', () => {
   const startButton = document.getElementById('start-button');
   const restartButton = document.getElementById('restart-button');
 
-  // Game state
-  let gameRunning = false;
-  let player;
-  let enemyState = null;
-  let bullets = [];
-  let enemyBullets = [];
-  let powerUps = [];
-  let lastEnemyShot = 0;
-  let keyStates = {};
-  let lastFrameTime = 0;
-  let animationFrameId;
-  let width, height, scale;
-  let spaceBackground;
-
   // Game over
   function gameOver() {
     gameOverFunc(gameOverScreen, finalScoreElement);
-    gameRunning = false;
   }
 
   // Game loop
   function gameLoop(timestamp) {
-    if (!gameRunning) return;
+    if (!gameState.gameRunning) return;
     
-    const deltaTime = timestamp - lastFrameTime;
+    const deltaTime = timestamp - gameState.lastFrameTime;
     const currentTime = performance.now();
-    lastFrameTime = timestamp;
+    gameState.lastFrameTime = timestamp;
     
+    // Update all entities
+    updateEntities(deltaTime, currentTime);
+    
+    // Request next frame
+    gameState.animationFrameId = requestAnimationFrame(gameLoop);
+  }
+  
+  // Update all entities with the current game state
+  function updateEntities(deltaTime, currentTime) {
     // Update space background animation (horizontal scrolling)
-    updateSpaceBackground(spaceBackground, deltaTime, width);
+    updateSpaceBackground(gameState.spaceBackground, deltaTime, gameState.width);
     
-    // Update player - now with height parameter for vertical movement
-    bullets = updatePlayer(player, keyStates, width, height, deltaTime, svg, bullets);
-    
-    // Update enemies - now with side-scrolling behavior
-    const enemyResult = updateEnemies(
-      enemyState, player, width, height, scale, 
-      deltaTime, svg, enemyBullets, gameOver, 
-      currentTime, powerUps
+    // Update player
+    const playerResult = updatePlayer(
+      gameState.player, 
+      gameState.keyStates, 
+      gameState.width, 
+      gameState.height, 
+      deltaTime, 
+      svg, 
+      gameState.bullets, 
+      gameState.bombs, 
+      gameState.enemyState,
+      gameState.hitboxesVisible
     );
     
-    enemyState = enemyResult.enemyState;
-    enemyBullets = enemyResult.enemyBullets;
-    powerUps = enemyResult.powerUps;
+    gameState.bullets = playerResult.bullets;
+    gameState.bombs = playerResult.bombs;
+    
+    // Update enemies
+    const enemyResult = updateEnemies(
+      gameState.enemyState, 
+      gameState.player, 
+      gameState.width, 
+      gameState.height, 
+      gameState.scale, 
+      deltaTime, 
+      svg, 
+      gameState.enemyBullets, 
+      gameOver, 
+      currentTime, 
+      gameState.powerUps,
+      gameState.hitboxesVisible
+    );
+    
+    gameState.enemyState = enemyResult.enemyState;
+    gameState.enemyBullets = enemyResult.enemyBullets;
+    gameState.powerUps = enemyResult.powerUps;
+    
+    // Update bombs
+    for (let i = gameState.bombs.length - 1; i >= 0; i--) {
+      const bombResult = updateBomb(
+        gameState.bombs[i], 
+        deltaTime, 
+        svg, 
+        gameState.enemyState,
+        gameState.hitboxesVisible
+      );
+      
+      if (bombResult.completed) {
+        gameState.bombs.splice(i, 1);
+        gameState.enemyState = bombResult.enemyState;
+      }
+    }
     
     // Update bullets and powerups
     const bulletResult = updateBullets(
-      bullets, enemyBullets, enemyState, player, 
-      svg, scoreElement, deltaTime, width, height, 
-      gameOver, powerUps
+      gameState.bullets, 
+      gameState.enemyBullets, 
+      gameState.enemyState, 
+      gameState.player, 
+      svg, 
+      scoreElement, 
+      deltaTime, 
+      gameState.width, 
+      gameState.height, 
+      gameOver, 
+      gameState.powerUps,
+      gameState.hitboxesVisible
     );
     
-    bullets = bulletResult.bullets;
-    enemyBullets = bulletResult.enemyBullets;
-    enemyState = bulletResult.enemyState;
-    powerUps = bulletResult.powerUps;
+    gameState.bullets = bulletResult.bullets;
+    gameState.enemyBullets = bulletResult.enemyBullets;
+    gameState.enemyState = bulletResult.enemyState;
+    gameState.powerUps = bulletResult.powerUps;
+    // Store previous score for difficulty check
+    const previousScore = gameState.score;
+    gameState.score = bulletResult.score;
     
-    animationFrameId = requestAnimationFrame(gameLoop);
+    // Update hitbox visibility if needed
+    if (gameState.hitboxesVisible) {
+      updateHitboxVisibility();
+    }
+    
+    // Check if difficulty should increase based on score
+    updateDifficulty(gameState.score, previousScore);
   }
 
   // Start the game
   function startGame() {
-    const gameState = startGameFunc(svg, scoreElement, startScreen, gameOverScreen);
-    
-    // Set local variables from game state
-    gameRunning = gameState.gameRunning;
-    player = gameState.player;
-    enemyState = gameState.enemyState;
-    bullets = gameState.bullets;
-    enemyBullets = gameState.enemyBullets;
-    powerUps = gameState.powerUps;
-    lastEnemyShot = gameState.lastEnemyShot;
-    keyStates = gameState.keyStates;
-    lastFrameTime = gameState.lastFrameTime;
-    width = gameState.width;
-    height = gameState.height;
-    scale = gameState.scale;
-    spaceBackground = gameState.spaceBackground;
-    
-    animationFrameId = requestAnimationFrame(gameLoop);
+    startGameFunc(svg, scoreElement, startScreen, gameOverScreen);
+    gameState.animationFrameId = requestAnimationFrame(gameLoop);
   }
-
+  
   // Handle keyboard input
   function handleKeyDown(e) {
-    keyStates[e.key] = true;
+    gameState.keyStates[e.key] = true;
     // Prevent scrolling with arrow keys or space
     if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) {
       e.preventDefault();
     }
+    
+    // Toggle hitbox display with 'h' key
+    if (e.key === 'h' && gameState.gameRunning) {
+      toggleHitboxesFunc();
+    }
   }
 
   function handleKeyUp(e) {
-    keyStates[e.key] = false;
+    gameState.keyStates[e.key] = false;
   }
 
   // Handle window resize
   function handleResize() {
-    const dimensions = handleResizeFunc(svg, animationFrameId, gameRunning, startGame);
-    if (!gameRunning) {
-      width = dimensions.width;
-      height = dimensions.height;
-      scale = dimensions.scale;
+    const dimensions = handleResizeFunc(svg);
+    if (dimensions === null) {
+      // Restart needed
+      startGame();
+    } else if (!gameState.gameRunning) {
+      gameState.width = dimensions.width;
+      gameState.height = dimensions.height;
+      gameState.scale = dimensions.scale;
     }
   }
 

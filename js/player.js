@@ -1,21 +1,50 @@
 import { createSVGElement } from './utils.js';
-import { PLAYER_SHOOT_COOLDOWN, POWERUP_TYPES } from './constants.js';
+import { PLAYER_SHOOT_COOLDOWN, POWERUP_TYPES, BOMB_COOLDOWN } from './constants.js';
 import { createBullet } from './bullet.js';
+import { createBomb, findNearestEnemy } from './bomb.js';
 
 // Initialize player
 function createPlayer(svg, width, height, scale) {
   const playerSize = 50 * scale;
   const playerY = height / 2; // Position player in middle of screen vertically for side-scroller
   
-  const playerElement = createSVGElement('polygon', {
-    points: `0,${playerSize/2} ${playerSize},${playerSize/2} ${playerSize/2},${playerSize}`,
-    fill: 'green',
-    stroke: 'lime',
-    'stroke-width': 2,
-    transform: `translate(${100 * scale}, ${playerY})`
+  // Create a group for player elements
+  const playerGroup = createSVGElement('g', {
+    id: 'player-group'
   });
   
-  svg.appendChild(playerElement);
+  // Create image element for player
+  const playerElement = createSVGElement('image', {
+    href: '/images/ship.png',
+    width: playerSize,
+    height: playerSize,
+    x: 0,
+    y: 0,
+    transform: `rotate(90, ${playerSize/2}, ${playerSize/2})`  // Rotate around center point
+  });
+  
+  // Create hitbox outline for debugging
+  const hitboxOutline = createSVGElement('rect', {
+    x: 0,
+    y: 0,
+    width: playerSize,
+    height: playerSize,
+    fill: 'none',
+    stroke: 'lime',
+    'stroke-width': 2,
+    'stroke-dasharray': '5,5',
+    class: 'hitbox',
+    'pointer-events': 'none'
+  });
+  
+  // Add elements to group - add playerElement first so hitbox appears on top
+  playerGroup.appendChild(playerElement);
+  playerGroup.appendChild(hitboxOutline);
+  
+  // Position the group
+  playerGroup.setAttribute('transform', `translate(${100 * scale}, ${playerY})`);
+  
+  svg.appendChild(playerGroup);
   
   return {
     element: playerElement,
@@ -27,6 +56,10 @@ function createPlayer(svg, width, height, scale) {
     canShoot: true,
     lastShot: 0,
     shootCooldown: PLAYER_SHOOT_COOLDOWN,
+    // Bomb properties
+    canUseBomb: true,
+    lastBomb: 0,
+    bombCooldown: BOMB_COOLDOWN,
     // Power-up properties
     powerUpActive: false,
     currentPowerUp: null,
@@ -36,14 +69,14 @@ function createPlayer(svg, width, height, scale) {
 }
 
 // Update player
-function updatePlayer(player, keyStates, width, height, deltaTime, svg, bullets) {
+function updatePlayer(player, keyStates, width, height, deltaTime, svg, bullets, bombs = [], enemyState = null, hitboxesVisible = false) {
   const moveAmount = player.speed * deltaTime / 16;
   
-  // Horizontal movement
+  // Horizontal movement - allow player to move across most of the screen
   if (keyStates['ArrowLeft'] && player.x > 0) {
     player.x -= moveAmount;
   }
-  if (keyStates['ArrowRight'] && player.x < width / 3) { // Limit rightward movement for side-scroller
+  if (keyStates['ArrowRight'] && player.x < width * 0.8) { // Allow player to move further right
     player.x += moveAmount;
   }
   
@@ -55,8 +88,17 @@ function updatePlayer(player, keyStates, width, height, deltaTime, svg, bullets)
     player.y += moveAmount;
   }
   
-  // Update player element position
-  player.element.setAttribute('transform', `translate(${player.x}, ${player.y})`);
+  // Update player group position
+  const playerGroup = document.getElementById('player-group');
+  if (playerGroup) {
+    playerGroup.setAttribute('transform', `translate(${player.x}, ${player.y})`);
+    
+    // Update player hitbox visibility
+    const hitbox = playerGroup.querySelector('.hitbox');
+    if (hitbox) {
+      hitbox.style.opacity = hitboxesVisible ? '1' : '0';
+    }
+  }
   
   // Check if power-up has expired
   if (player.powerUpActive && Date.now() > player.powerUpEndTime) {
@@ -92,7 +134,80 @@ function updatePlayer(player, keyStates, width, height, deltaTime, svg, bullets)
     }
   }
   
-  return bullets;
+  // Using bomb with B key
+  if (keyStates['b'] && player.canUseBomb && Date.now() - player.lastBomb > player.bombCooldown && enemyState) {
+    const nearestEnemy = findNearestEnemy(player, enemyState.enemies);
+    
+    if (nearestEnemy) {
+      // Create bomb from player position targeting the nearest enemy
+      const bombX = player.x + player.width;
+      const bombY = player.y + player.height / 2;
+      
+      bombs.push(createBomb(svg, bombX, bombY, nearestEnemy, 1));
+      
+      // Set cooldown
+      player.lastBomb = Date.now();
+      
+      // Create visual cooldown indicator in UI
+      updateBombCooldownIndicator(player.bombCooldown);
+    }
+  }
+  
+  return { bullets, bombs };
+}
+
+// Update bomb cooldown indicator
+function updateBombCooldownIndicator(cooldown) {
+  // Check if indicator already exists
+  let indicator = document.getElementById('bomb-cooldown-indicator');
+  
+  if (!indicator) {
+    // Create indicator
+    indicator = document.createElement('div');
+    indicator.id = 'bomb-cooldown-indicator';
+    indicator.style.position = 'absolute';
+    indicator.style.bottom = '10px';
+    indicator.style.right = '10px';
+    indicator.style.padding = '5px 10px';
+    indicator.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+    indicator.style.color = 'white';
+    indicator.style.borderRadius = '5px';
+    
+    document.body.appendChild(indicator);
+  }
+  
+  // Set initial text
+  indicator.textContent = 'Bomb: Ready in 5s';
+  
+  // Start countdown
+  let timeLeft = cooldown / 1000;
+  const interval = setInterval(() => {
+    timeLeft--;
+    
+    if (timeLeft <= 0) {
+      clearInterval(interval);
+      indicator.textContent = 'Bomb: Ready (B)';
+      indicator.style.backgroundColor = 'rgba(0, 255, 0, 0.7)';
+      
+      // Fade out after 2 seconds
+      setTimeout(() => {
+        let opacity = 0.7;
+        const fadeInterval = setInterval(() => {
+          opacity -= 0.05;
+          indicator.style.backgroundColor = `rgba(0, 255, 0, ${opacity})`;
+          
+          if (opacity <= 0) {
+            clearInterval(fadeInterval);
+            if (indicator.parentNode) {
+              indicator.parentNode.removeChild(indicator);
+            }
+          }
+        }, 50);
+      }, 2000);
+    } else {
+      indicator.textContent = `Bomb: Ready in ${timeLeft}s`;
+    }
+  }, 1000);
 }
 
 // Activate power-up
@@ -116,9 +231,8 @@ function activatePowerUp(player, powerUpType) {
       break;
   }
   
-  // Visual indicator of powered-up state
-  player.element.setAttribute('stroke', POWERUP_TYPES[powerUpType].color);
-  player.element.setAttribute('stroke-width', 4);
+  // Visual indicator of powered-up state - add filter for glow effect
+  player.element.setAttribute('filter', `drop-shadow(0 0 5px ${POWERUP_TYPES[powerUpType].color})`);
   
   // Update UI indicator
   updatePowerUpIndicator(powerUpType, POWERUP_TYPES[powerUpType].duration);
@@ -131,8 +245,7 @@ function deactivatePowerUp(player) {
   player.weaponLevel = 1;
   
   // Reset visual appearance
-  player.element.setAttribute('stroke', 'lime');
-  player.element.setAttribute('stroke-width', 2);
+  player.element.removeAttribute('filter');
   
   // Clear UI indicator
   clearPowerUpIndicator();
@@ -196,4 +309,4 @@ function clearPowerUpIndicator() {
   indicator.innerHTML = '';
 }
 
-export { createPlayer, updatePlayer, activatePowerUp };
+export { createPlayer, updatePlayer, activatePowerUp, updateBombCooldownIndicator };
