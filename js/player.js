@@ -15,7 +15,7 @@ function createPlayer(svg, width, height, scale) {
   
   // Create image element for player
   const playerElement = createSVGElement('image', {
-    href: '/images/ship.png',
+    href: '/space-invaders/images/ship.png',
     width: playerSize,
     height: playerSize,
     x: 0,
