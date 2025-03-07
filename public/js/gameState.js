@@ -1,8 +1,8 @@
 import { setDimensions } from './utils.js';
 import { createPlayer } from './player.js';
-import { createEnemies } from './enemy.js';
+import { initEnemies } from './enemy.js';
 import { createSpaceBackground } from './background.js';
-import { ENEMY_STARTING_SPEED } from './constants.js';
+import { ENEMY_SHOOT_COOLDOWN } from './constants.js';
 
 // Game state variables
 let gameRunning = false;
@@ -10,12 +10,11 @@ let score = 0;
 let lives = 3;
 let width, height, scale;
 let player;
-let enemies = [];
+let enemyState = null;
 let bullets = [];
 let enemyBullets = [];
+let powerUps = [];
 let lastEnemyShot = 0;
-let enemyDirection = 1;
-let enemySpeed = ENEMY_STARTING_SPEED;
 let keyStates = {};
 let lastFrameTime = 0;
 let animationFrameId;
@@ -36,11 +35,11 @@ function startGame(svg, scoreElement, startScreen, gameOverScreen) {
   height = dimensions.height;
   scale = dimensions.scale;
 
-
   svg.innerHTML = '';
-  enemies = [];
+  enemyState = initEnemies();
   bullets = [];
   enemyBullets = [];
+  powerUps = [];
   score = 0;
   keyStates = {};
   
@@ -51,24 +50,21 @@ function startGame(svg, scoreElement, startScreen, gameOverScreen) {
   // Create dynamic space background
   spaceBackground = createSpaceBackground(svg, width, height);
   
+  // Create player
   player = createPlayer(svg, width, height, scale);
-  enemies = createEnemies(svg, width, height, scale);
   
   lastFrameTime = performance.now();
   gameRunning = true;
-  enemySpeed = ENEMY_STARTING_SPEED;
-  enemyDirection = 1;
   lastEnemyShot = 0;
   
   return {
     gameRunning,
     player,
-    enemies,
+    enemyState,
     bullets,
     enemyBullets,
+    powerUps,
     lastEnemyShot,
-    enemyDirection,
-    enemySpeed,
     keyStates,
     lastFrameTime,
     width,
@@ -96,12 +92,11 @@ export {
   score,
   lives,
   player,
-  enemies,
+  enemyState,
   bullets,
   enemyBullets,
+  powerUps,
   lastEnemyShot,
-  enemyDirection,
-  enemySpeed,
   keyStates,
   lastFrameTime,
   animationFrameId,

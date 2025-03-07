@@ -1,7 +1,6 @@
 import { updatePlayer } from './player.js';
 import { updateEnemies } from './enemy.js';
 import { updateBullets } from './bullet.js';
-import { createEnemies } from './enemy.js';
 import { updateSpaceBackground } from './background.js';
 import { 
   gameOver as gameOverFunc, 
@@ -22,12 +21,11 @@ document.addEventListener('DOMContentLoaded', () => {
   // Game state
   let gameRunning = false;
   let player;
-  let enemies = [];
+  let enemyState = null;
   let bullets = [];
   let enemyBullets = [];
+  let powerUps = [];
   let lastEnemyShot = 0;
-  let enemyDirection = 1;
-  let enemySpeed = 1;
   let keyStates = {};
   let lastFrameTime = 0;
   let animationFrameId;
@@ -45,42 +43,37 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!gameRunning) return;
     
     const deltaTime = timestamp - lastFrameTime;
+    const currentTime = performance.now();
     lastFrameTime = timestamp;
     
-    // Update space background animation
-    updateSpaceBackground(spaceBackground, deltaTime, height);
+    // Update space background animation (horizontal scrolling)
+    updateSpaceBackground(spaceBackground, deltaTime, width);
     
-    // Update player
-    bullets = updatePlayer(player, keyStates, width, deltaTime, svg, bullets);
+    // Update player - now with height parameter for vertical movement
+    bullets = updatePlayer(player, keyStates, width, height, deltaTime, svg, bullets);
     
-    // Update enemies
+    // Update enemies - now with side-scrolling behavior
     const enemyResult = updateEnemies(
-      enemies, player, enemyDirection, enemySpeed, 
-      width, height, scale, deltaTime, lastEnemyShot, 
-      svg, enemyBullets, gameOver
+      enemyState, player, width, height, scale, 
+      deltaTime, svg, enemyBullets, gameOver, 
+      currentTime, powerUps
     );
     
-    enemies = enemyResult.enemies;
-    enemyDirection = enemyResult.enemyDirection;
-    lastEnemyShot = enemyResult.lastEnemyShot;
+    enemyState = enemyResult.enemyState;
     enemyBullets = enemyResult.enemyBullets;
+    powerUps = enemyResult.powerUps;
     
-    // Update bullets
+    // Update bullets and powerups
     const bulletResult = updateBullets(
-      bullets, enemyBullets, enemies, player, 
-      svg, scoreElement, deltaTime, height, gameOver
+      bullets, enemyBullets, enemyState, player, 
+      svg, scoreElement, deltaTime, width, height, 
+      gameOver, powerUps
     );
     
     bullets = bulletResult.bullets;
     enemyBullets = bulletResult.enemyBullets;
-    enemies = bulletResult.enemies;
-    enemySpeed = bulletResult.enemySpeed;
-    
-    // Check if all enemies are defeated
-    if (enemies.length === 0) {
-      enemySpeed = 1;
-      enemies = createEnemies(svg, width, height, scale);
-    }
+    enemyState = bulletResult.enemyState;
+    powerUps = bulletResult.powerUps;
     
     animationFrameId = requestAnimationFrame(gameLoop);
   }
@@ -92,12 +85,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // Set local variables from game state
     gameRunning = gameState.gameRunning;
     player = gameState.player;
-    enemies = gameState.enemies;
+    enemyState = gameState.enemyState;
     bullets = gameState.bullets;
     enemyBullets = gameState.enemyBullets;
+    powerUps = gameState.powerUps;
     lastEnemyShot = gameState.lastEnemyShot;
-    enemyDirection = gameState.enemyDirection;
-    enemySpeed = gameState.enemySpeed;
     keyStates = gameState.keyStates;
     lastFrameTime = gameState.lastFrameTime;
     width = gameState.width;

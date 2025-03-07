@@ -1,4 +1,5 @@
 import { createSVGElement } from './utils.js';
+import { SCROLL_SPEED } from './constants.js';
 
 // Create a star with random properties
 function createStar(svg, width, height) {
@@ -62,33 +63,38 @@ function createGalaxy(svg, width, height) {
   };
 }
 
-// Initialize space background
+// Initialize space background for side-scrolling
 function createSpaceBackground(svg, width, height) {
   // Add a space gradient background
   const defs = createSVGElement('defs', {});
   
-  const gradient = createSVGElement('radialGradient', {
+  const gradient = createSVGElement('linearGradient', {
     id: 'spaceGradient',
-    cx: '50%',
-    cy: '50%',
-    r: '100%',
-    fx: '50%',
-    fy: '50%'
+    x1: '0%',
+    y1: '0%',
+    x2: '100%',
+    y2: '0%'
   });
   
   // Add gradient stops
   const stop1 = createSVGElement('stop', {
     offset: '0%',
-    'stop-color': '#0A0A2A'
+    'stop-color': '#000000'
   });
   
   const stop2 = createSVGElement('stop', {
+    offset: '50%',
+    'stop-color': '#0A0A2A'
+  });
+  
+  const stop3 = createSVGElement('stop', {
     offset: '100%',
     'stop-color': '#000000'
   });
   
   gradient.appendChild(stop1);
   gradient.appendChild(stop2);
+  gradient.appendChild(stop3);
   defs.appendChild(gradient);
   svg.appendChild(defs);
   
@@ -103,12 +109,17 @@ function createSpaceBackground(svg, width, height) {
   
   svg.appendChild(background);
   
-  // Create stars
-  const stars = [];
+  // Create stars - we'll create two layers for parallax effect
+  const starsFar = [];
+  const starsNear = [];
   const numStars = 100;
   
   for (let i = 0; i < numStars; i++) {
-    stars.push(createStar(svg, width, height));
+    if (i < numStars / 2) {
+      starsNear.push(createStar(svg, width, height));
+    } else {
+      starsFar.push(createStar(svg, width, height));
+    }
   }
   
   // Create distant galaxies
@@ -119,37 +130,51 @@ function createSpaceBackground(svg, width, height) {
     galaxies.push(createGalaxy(svg, width, height));
   }
   
-  return { stars, galaxies, background };
+  return { starsNear, starsFar, galaxies, background };
 }
 
-// Update space background to create moving effect
-function updateSpaceBackground(background, deltaTime, height) {
-  const { stars, galaxies } = background;
+// Update space background to create side-scrolling effect
+function updateSpaceBackground(background, deltaTime, width) {
+  const { starsNear, starsFar, galaxies } = background;
+  const baseSpeed = SCROLL_SPEED * (deltaTime / 16);
   
-  // Update stars
-  for (const star of stars) {
-    star.y += star.speed * (deltaTime / 16);
+  // Update near stars (faster)
+  for (const star of starsNear) {
+    star.x -= (star.speed + baseSpeed) * 1.5;
     
     // Reset star position when it moves off screen
-    if (star.y > height) {
-      star.y = 0;
-      star.x = Math.random() * parseInt(star.element.ownerSVGElement.getAttribute('width'));
+    if (star.x < 0) {
+      star.x = width;
+      star.y = Math.random() * parseInt(star.element.ownerSVGElement.getAttribute('height'));
     }
     
-    star.element.setAttribute('cy', star.y);
+    star.element.setAttribute('cx', star.x);
   }
   
-  // Update galaxies
-  for (const galaxy of galaxies) {
-    galaxy.y += galaxy.speed * (deltaTime / 16);
+  // Update far stars (slower)
+  for (const star of starsFar) {
+    star.x -= (star.speed + baseSpeed) * 0.7;
     
-    // Reset galaxy position when it moves off screen
-    if (galaxy.y > height + galaxy.size) {
-      galaxy.y = -galaxy.size;
-      galaxy.x = Math.random() * parseInt(galaxy.element.ownerSVGElement.getAttribute('width'));
+    // Reset star position when it moves off screen
+    if (star.x < 0) {
+      star.x = width;
+      star.y = Math.random() * parseInt(star.element.ownerSVGElement.getAttribute('height'));
     }
     
-    galaxy.element.setAttribute('cy', galaxy.y);
+    star.element.setAttribute('cx', star.x);
+  }
+  
+  // Update galaxies (slowest - background layer)
+  for (const galaxy of galaxies) {
+    galaxy.x -= galaxy.speed + baseSpeed * 0.3;
+    
+    // Reset galaxy position when it moves off screen
+    if (galaxy.x < -galaxy.size) {
+      galaxy.x = width + galaxy.size;
+      galaxy.y = Math.random() * parseInt(galaxy.element.ownerSVGElement.getAttribute('height'));
+    }
+    
+    galaxy.element.setAttribute('cx', galaxy.x);
   }
 }
 

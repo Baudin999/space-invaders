@@ -1,6 +1,2 @@
-COMPLETED:
-- Set up GitHub Pages deployment
-- Added GitHub Actions workflow for automatic deployment
-- Updated README with GitHub Pages information
-
-The game is now configured to deploy to https://baudin999.github.io/space-invaders
+We currently have space invaders, but what I want is a side scroller where we encounter different enemy types which fly at different speeds and different armor. 
+We can also encounter powerups which cause our weapons to upgrade so that they do more dmg. 
